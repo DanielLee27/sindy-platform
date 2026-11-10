@@ -2,7 +2,7 @@ import numpy as np
 import pysindy as ps
 
 
-def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05):
+def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05, degree=2):
     """
     Run SINDy on scaled data and return recovered equations + model object.
 
@@ -13,14 +13,15 @@ def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05):
       feature_names — list of variable names, e.g. ['x', 'y', 'z']
       threshold     — sparsity threshold (higher = fewer terms kept)
       alpha         — regularization strength
+      degree        — max polynomial degree of the library (Van der Pol needs 3)
 
     Returns: dict with model, equations, and score
     """
     if feature_names is None:
         feature_names = [f"x{i}" for i in range(X.shape[1])]
 
-    # Build the feature library (polynomial terms up to degree 2)
-    library = ps.PolynomialLibrary(degree=2)
+    # Build the feature library (polynomial terms up to `degree`)
+    library = ps.PolynomialLibrary(degree=degree)
 
     # Optimizer: STLSQ (standard SINDy sparse regression)
     optimizer = ps.STLSQ(threshold=threshold, alpha=alpha)
@@ -29,12 +30,9 @@ def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05):
         feature_library=library,
         optimizer=optimizer
     )
-    model.feature_names = feature_names
 
-    if X_dot is not None:
-        model.fit(X, t=t, x_dot=X_dot)
-    else:
-        model.fit(X, t=t)
+    # feature_names must go through fit(); PySINDy 2.x ignores the attribute
+    model.fit(X, t=t, x_dot=X_dot, feature_names=feature_names)
 
     # Extract equations as strings
     equations = model.equations(precision=3)
