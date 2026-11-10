@@ -9,6 +9,8 @@ import pytest
 from engine import metrics
 from engine.benchmarks import make_dataset
 from engine.candidates import CANDIDATES, Candidate, FittedModel
+
+SINDY = {k: CANDIDATES[k] for k in ("SINDy-poly", "SINDy-trig")}
 from engine.harness import compare, evaluate
 from engine.terms import compile_rhs, term_function
 
@@ -136,7 +138,7 @@ def test_poly_beats_trig_on_polynomial_systems_and_table_is_side_by_side():
     from engine.benchmarks import make_grid
     from engine.harness import comparison_table
 
-    df = compare(CANDIDATES, make_grid(), verbose=False)
+    df = compare(SINDY, make_grid(), verbose=False)
     assert set(df["model_name"]) == {"SINDy-poly", "SINDy-trig"}
     tab = comparison_table(df)
     recon = tab["reconstruction_error"]

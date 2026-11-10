@@ -166,3 +166,16 @@ CANDIDATES = {
     "SINDy-trig": SindyCandidate("SINDy-trig", library="trig", n_frequencies=2,
                                  threshold=0.15, alpha=0.0),
 }
+
+
+def pysr_available():
+    """True if the optional pysr package is installed (does not start Julia)."""
+    import importlib.util
+    return importlib.util.find_spec("pysr") is not None
+
+
+# PySR is optional: register it only when installed (see requirements-pysr.txt).
+if pysr_available():
+    from engine.candidates_pysr import PySRCandidate
+
+    CANDIDATES["PySR"] = PySRCandidate("PySR", timeout_per_equation=60)

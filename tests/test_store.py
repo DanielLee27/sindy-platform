@@ -8,16 +8,18 @@ from engine.harness import compare, evaluate
 from engine.store import RunStore
 from tests.test_harness import Crashing
 
+SINDY = {k: CANDIDATES[k] for k in ("SINDy-poly", "SINDy-trig")}
+
 
 def test_every_run_is_logged_and_round_trips(tmp_path):
     store = RunStore(tmp_path / "runs.sqlite")
     datasets = [make_dataset("Van der Pol", n_samples=1500),
                 make_dataset("Lotka-Volterra", noise=0.05, n_samples=1500)]
-    df = compare(CANDIDATES, datasets, store=store, verbose=False)
+    df = compare(SINDY, datasets, store=store, verbose=False)
     assert len(store) == len(df) == 4
 
     runs = store.load_runs()
-    assert set(runs["model_name"]) == set(CANDIDATES)
+    assert set(runs["model_name"]) == set(SINDY)
     assert runs["batch_id"].nunique() == 1 and runs["git_commit"].notna().all()
     # measured features and generation settings come back as separate columns
     assert "feat.noise_rel_mean" in runs and "spec.noise" in runs

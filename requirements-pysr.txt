@@ -1,0 +1,5 @@
+# Optional: PySR model family. Downloads a Julia runtime on first import.
+-r requirements.txt
+pysr==2.7.2
+juliacall==0.9.36
+sympy==1.14.0
