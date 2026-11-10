@@ -47,13 +47,14 @@ class Dataset:
         return self.X[: self.split]
 
 
-def make_dataset(system, noise=0.0, dt=0.01, n_samples=2000, seed=0,
+def make_dataset(system, noise=0.0, dt=0.01, n_samples=5000, seed=0,
                  train_frac=0.8, params=None, x0=None):
     """
     system     — key in pipeline.systems.DEMO_SYSTEMS
     noise      — relative noise level (fraction of each variable's std)
     dt         — sampling interval
-    n_samples  — number of time points
+    n_samples  — number of time points (default 5000: at 2000, Rossler covers
+                 under 3 orbits and its z-dynamics are barely excited)
     seed       — RNG seed for the noise
     train_frac — fraction of samples used for fitting; the rest is the
                  held-out forecast segment
@@ -90,7 +91,7 @@ def make_dataset(system, noise=0.0, dt=0.01, n_samples=2000, seed=0,
     )
 
 
-def make_grid(systems=None, noises=(0.0,), dts=(0.01,), lengths=(2000,), seeds=(0,), **kw):
+def make_grid(systems=None, noises=(0.0,), dts=(0.01,), lengths=(5000,), seeds=(0,), **kw):
     """Every combination of the given settings, as a list of Datasets."""
     systems = systems or list(DEMO_SYSTEMS)
     return [

@@ -2,7 +2,8 @@ import numpy as np
 import pysindy as ps
 
 
-def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05, degree=2):
+def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05, degree=2,
+              library=None):
     """
     Run SINDy on scaled data and return recovered equations + model object.
 
@@ -14,14 +15,17 @@ def run_sindy(X, t, X_dot=None, feature_names=None, threshold=0.1, alpha=0.05, d
       threshold     — sparsity threshold (higher = fewer terms kept)
       alpha         — regularization strength
       degree        — max polynomial degree of the library (Van der Pol needs 3)
+      library       — a PySINDy feature library; if None, a polynomial
+                      library of `degree` is used (the original behaviour)
 
     Returns: dict with model, equations, and score
     """
     if feature_names is None:
         feature_names = [f"x{i}" for i in range(X.shape[1])]
 
-    # Build the feature library (polynomial terms up to `degree`)
-    library = ps.PolynomialLibrary(degree=degree)
+    # Build the feature library (polynomial terms up to `degree` by default)
+    if library is None:
+        library = ps.PolynomialLibrary(degree=degree)
 
     # Optimizer: STLSQ (standard SINDy sparse regression)
     optimizer = ps.STLSQ(threshold=threshold, alpha=alpha)
