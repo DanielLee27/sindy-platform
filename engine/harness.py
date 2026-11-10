@@ -129,6 +129,33 @@ def compare(candidates, datasets, store=None, verbose=True):
     return pd.DataFrame(records)
 
 
+# Score columns shown in the comparison table, and which direction is better
+TABLE_METRICS = {
+    "reconstruction_error": "lower",
+    "forecast_nrmse": "lower",
+    "valid_time": "higher",
+    "n_terms": "lower",
+    "stability": None,
+    "fit_seconds": "lower",
+    "interpretability": None,
+    "term_f1": "higher",
+}
+
+
+def comparison_table(df, metrics_=None):
+    """
+    Side-by-side table: one row per dataset (system, noise, dt, n_samples),
+    one column group per metric, one sub-column per model.
+    """
+    metrics_ = list(metrics_ or TABLE_METRICS)
+    df = df.copy()
+    for key in ("noise", "dt", "n_samples"):
+        df[key] = df["spec"].map(lambda s, k=key: s[k])
+    index = ["system", "noise", "dt", "n_samples"]
+    return df.pivot_table(index=index, columns="model_name", values=metrics_,
+                          aggfunc="first")[metrics_]
+
+
 def _short_error(exc):
     tb = traceback.extract_tb(exc.__traceback__)
     where = f" ({tb[-1].filename.split('/')[-1].split(chr(92))[-1]}:{tb[-1].lineno})" if tb else ""

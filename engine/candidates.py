@@ -157,7 +157,12 @@ class SindyCandidate(Candidate):
 # and recovery fails even on clean data. threshold=0.15 removes the small
 # finite-difference artefacts seen on Lorenz. With these, all four systems
 # recover exactly on clean and 1%-noise data (see tests/test_candidates.py).
+#
+# SINDy-trig uses the same optimizer settings, so the library is the only
+# difference between the two: a controlled comparison.
 CANDIDATES = {
     "SINDy-poly": SindyCandidate("SINDy-poly", library="poly", degree=3,
+                                 threshold=0.15, alpha=0.0),
+    "SINDy-trig": SindyCandidate("SINDy-trig", library="trig", n_frequencies=2,
                                  threshold=0.15, alpha=0.0),
 }

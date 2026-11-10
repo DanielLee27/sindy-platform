@@ -128,3 +128,17 @@ def test_a_crash_is_recorded_and_does_not_stop_the_run():
     crash, ok = df.iloc[0], df.iloc[1]
     assert crash["status"] == "failed" and "boom" in crash["error"]
     assert ok["status"] == "ok"
+
+
+# ----------------------------------------------------------- comparison ---
+
+def test_poly_beats_trig_on_polynomial_systems_and_table_is_side_by_side():
+    from engine.benchmarks import make_grid
+    from engine.harness import comparison_table
+
+    df = compare(CANDIDATES, make_grid(), verbose=False)
+    assert set(df["model_name"]) == {"SINDy-poly", "SINDy-trig"}
+    tab = comparison_table(df)
+    recon = tab["reconstruction_error"]
+    assert (recon["SINDy-poly"] < recon["SINDy-trig"]).all()
+    assert len(tab) == 4  # one row per dataset
