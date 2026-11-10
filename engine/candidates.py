@@ -20,6 +20,7 @@ from typing import Callable, Optional
 import numpy as np
 import pysindy as ps
 
+from engine.terms import compile_rhs
 from pipeline.models import run_sindy
 from pipeline.preprocess import estimate_derivatives, scale_data
 
@@ -59,6 +60,25 @@ def _build_library(kind, degree, n_frequencies):
     if kind == "poly+trig":
         return ps.PolynomialLibrary(degree=degree) + ps.FourierLibrary(n_frequencies=n_frequencies)
     raise ValueError(f"Unknown library {kind!r}; use 'poly', 'trig' or 'poly+trig'.")
+
+
+def _fast_rhs(model, coef, names, var_names, X_fit):
+    """
+    model.predict() validates its input on every call (~3 ms), which makes
+    simulating chaotic systems take minutes. Compile the active terms into a
+    plain numpy function instead, verify it reproduces predict() on fitted
+    states, and fall back to predict() if the term format is unsupported or
+    the check fails.
+    """
+    slow = lambda z: model.predict(z.reshape(1, -1))[0]  # noqa: E731
+    try:
+        fast = compile_rhs(coef, names, var_names)
+        probe = X_fit[np.linspace(0, len(X_fit) - 1, 20, dtype=int)]
+        ok = np.allclose([fast(z) for z in probe], model.predict(probe),
+                         rtol=1e-8, atol=1e-10)
+        return fast if ok else slow
+    except ValueError:
+        return slow
 
 
 class SindyCandidate(Candidate):
@@ -103,12 +123,13 @@ class SindyCandidate(Candidate):
         coef = np.asarray(result["coefficients"])
         names = result["feature_library_names"]
 
+        f = _fast_rhs(model, coef, names, var_names, X)
+
         def rhs(x):
             # The model lives in (possibly scaled) z-space: dz/dt = f(z) with
             # z = (x - mu) / sd, so dx/dt = sd * f((x - mu) / sd). With scaling
             # off this is just f(x). The harness always works in data units.
-            z = (np.asarray(x) - mu) / sd
-            return sd * model.predict(z.reshape(1, -1))[0]
+            return sd * f((np.asarray(x, float) - mu) / sd)
 
         coefficients = None
         if not c["scale"]:  # scaled coefficients aren't comparable to ground truth
