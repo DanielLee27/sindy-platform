@@ -9,7 +9,9 @@ Noise is RELATIVE: noise=0.05 adds Gaussian noise with std equal to 5% of
 each variable's own standard deviation. That makes a noise level mean the
 same thing on Lorenz (range ±20) as on Van der Pol (range ±2).
 """
+import contextlib
 import hashlib
+import io
 import itertools
 import json
 from dataclasses import dataclass, field
@@ -66,7 +68,8 @@ def make_dataset(system, noise=0.0, dt=0.01, n_samples=5000, seed=0,
     x0 = tuple(float(v) for v in (x0 if x0 is not None else s.x0))
 
     # Simulate slightly past the end, then trim to exactly n_samples
-    t, X_clean = s.generate((n_samples + 1) * dt, dt, 0.0, 0, x0=x0, **params)
+    with contextlib.redirect_stdout(io.StringIO()):  # generate_lorenz prints
+        t, X_clean = s.generate((n_samples + 1) * dt, dt, 0.0, 0, x0=x0, **params)
     if len(t) < n_samples or not np.isfinite(X_clean).all():
         raise RuntimeError(f"{system}: simulation failed or ended early")
     t, X_clean = t[:n_samples], X_clean[:n_samples]
