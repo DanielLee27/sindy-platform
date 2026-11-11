@@ -95,9 +95,16 @@ def make_dataset(system, noise=0.0, dt=0.01, n_samples=5000, seed=0,
 
 
 def make_grid(systems=None, noises=(0.0,), dts=(0.01,), lengths=(5000,), seeds=(0,), **kw):
-    """Every combination of the given settings, as a list of Datasets."""
+    """
+    Every combination of the given settings, as a list of Datasets.
+
+    The seed only drives the noise, so noise-free datasets are identical
+    across seeds; those are generated once (with the first seed) instead of
+    re-running every model on the same data.
+    """
     systems = systems or list(DEMO_SYSTEMS)
     return [
         make_dataset(sys_, noise=nz, dt=dt, n_samples=n, seed=sd, **kw)
         for sys_, nz, dt, n, sd in itertools.product(systems, noises, dts, lengths, seeds)
+        if nz > 0 or sd == seeds[0]
     ]

@@ -146,18 +146,53 @@ TABLE_METRICS = {
 }
 
 
+SETTING_COLUMNS = ["system", "noise", "dt", "n_samples"]
+
+
+def with_settings(df):
+    """
+    Add flat noise / dt / n_samples / seed columns. Works on compare()
+    output (a `spec` dict column) and on RunStore.load_runs() output
+    (already-flattened `spec.noise` etc.).
+    """
+    df = df.copy()
+    for key in ("noise", "dt", "n_samples", "seed"):
+        if f"spec.{key}" in df:
+            df[key] = df[f"spec.{key}"]
+        elif "spec" in df:
+            df[key] = df["spec"].map(lambda s, k=key: s.get(k) if isinstance(s, dict) else None)
+    return df
+
+
+def _stable_fraction(s):
+    return f"{int((s == 'stable').sum())}/{len(s)}"
+
+
+def _most_common(s):
+    s = s.dropna()
+    return s.mode().iloc[0] if len(s) else None
+
+
 def comparison_table(df, metrics_=None):
     """
-    Side-by-side table: one row per dataset (system, noise, dt, n_samples),
+    Side-by-side table: one row per setting (system, noise, dt, n_samples),
     one column group per metric, one sub-column per model.
+
+    Repeated runs of the same setting (different noise seeds) are
+    aggregated: numeric scores -> median, stability -> "k/n" runs stable,
+    interpretability -> most common category. The median ignores NaN, e.g.
+    the forecast error of a run that diverged, so always read it next to
+    the stability column: "1/3" means the median comes from one run.
     """
     metrics_ = list(metrics_ or TABLE_METRICS)
-    df = df.copy()
-    for key in ("noise", "dt", "n_samples"):
-        df[key] = df["spec"].map(lambda s, k=key: s[k])
-    index = ["system", "noise", "dt", "n_samples"]
-    return df.pivot_table(index=index, columns="model_name", values=metrics_,
-                          aggfunc="first")[metrics_]
+    df = with_settings(df)
+    agg = {m: "median" for m in metrics_}
+    if "stability" in agg:
+        agg["stability"] = _stable_fraction
+    if "interpretability" in agg:
+        agg["interpretability"] = _most_common
+    return df.pivot_table(index=SETTING_COLUMNS, columns="model_name", values=metrics_,
+                          aggfunc=agg, dropna=False)[metrics_]
 
 
 def _short_error(exc):

@@ -42,3 +42,9 @@ def test_grid_is_cross_product():
     grid = make_grid(systems=["Van der Pol", "Rossler"], noises=(0.0, 0.1), lengths=(500,))
     assert len(grid) == 4
     assert len({d.dataset_id for d in grid}) == 4
+
+
+def test_grid_generates_noise_free_data_once_across_seeds():
+    grid = make_grid(systems=["Van der Pol"], noises=(0.0, 0.05), lengths=(500,), seeds=(0, 1, 2))
+    assert [(d.spec["noise"], d.spec["seed"]) for d in grid] == [
+        (0.0, 0), (0.05, 0), (0.05, 1), (0.05, 2)]

@@ -145,3 +145,27 @@ def test_poly_beats_trig_on_polynomial_systems_and_table_is_side_by_side():
     recon = tab["reconstruction_error"]
     assert (recon["SINDy-poly"] < recon["SINDy-trig"]).all()
     assert len(tab) == 4  # one row per dataset
+
+
+def test_table_aggregates_seeds_instead_of_dropping_them():
+    from engine.benchmarks import make_grid
+    from engine.harness import comparison_table
+
+    grid = make_grid(systems=["Van der Pol"], noises=(0.05,), lengths=(1500,), seeds=(0, 1, 2))
+    df = compare({"SINDy-poly": CANDIDATES["SINDy-poly"]}, grid, verbose=False)
+    tab = comparison_table(df)
+    assert len(tab) == 1  # three seeds -> one row
+    assert tab[("stability", "SINDy-poly")].iloc[0] == "3/3"
+    median = df["reconstruction_error"].median()
+    assert tab[("reconstruction_error", "SINDy-poly")].iloc[0] == median
+
+
+def test_table_works_on_stored_runs(tmp_path):
+    from engine.benchmarks import make_dataset
+    from engine.harness import comparison_table
+    from engine.store import RunStore
+
+    store = RunStore(tmp_path / "r.sqlite")
+    compare(SINDY, [make_dataset("Van der Pol", n_samples=800)], store=store, verbose=False)
+    tab = comparison_table(store.load_runs())
+    assert set(tab["n_terms"].columns) == set(SINDY)
