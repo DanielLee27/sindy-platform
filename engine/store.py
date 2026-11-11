@@ -146,6 +146,8 @@ class RunStore:
                          .add_prefix(f"{prefix}."))
         out = pd.concat(parts, axis=1)
         out["equations"] = out.pop("equations_json").map(json.loads)
+        # e.g. {"model_extra": {"library_size": 20}}
+        out["extra"] = out.pop("extra_json").map(lambda s: json.loads(s) if s else {})
         return out
 
     def export_csv(self, path):

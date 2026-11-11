@@ -45,6 +45,9 @@ def _base_record(candidate, dataset):
         "term_f1": np.nan,
         "coef_error": np.nan,
         "equations": None,
+        # FittedModel.extra (e.g. PySR complexity, SINDy library size). It has
+        # no score column, so the store keeps it in extra_json.
+        "model_extra": {},
     }
 
 
@@ -67,6 +70,7 @@ def evaluate(candidate, dataset, sim_timeout=30.0):
     rec["fit_seconds"] = time.perf_counter() - t0
     rec["n_terms"] = fitted.n_terms
     rec["equations"] = fitted.equations
+    rec["model_extra"] = dict(fitted.extra)
     rec["interpretability"] = metrics.interpretability(
         fitted.symbolic, fitted.n_terms, len(d.var_names))
     rec.update(metrics.structure_recovery(fitted.coefficients, d.true_coefficients))

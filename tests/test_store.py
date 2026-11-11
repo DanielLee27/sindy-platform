@@ -60,6 +60,13 @@ def test_new_score_column_is_migrated_into_old_file(tmp_path, monkeypatch):
     assert "new_axis" in cols
 
 
+def test_model_extra_is_stored(tmp_path):
+    store = RunStore(tmp_path / "runs.sqlite")
+    store.log(evaluate(CANDIDATES["SINDy-poly"], make_dataset("Van der Pol", n_samples=800)))
+    extra = store.load_runs().iloc[0]["extra"]
+    assert extra["model_extra"]["library_size"] == 10  # degree-3 library in 2 variables
+
+
 def test_csv_export(tmp_path):
     store = RunStore(tmp_path / "runs.sqlite")
     store.log(evaluate(CANDIDATES["SINDy-poly"], make_dataset("Van der Pol", n_samples=800)))
