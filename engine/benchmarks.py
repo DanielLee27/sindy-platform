@@ -102,9 +102,14 @@ def make_grid(systems=None, noises=(0.0,), dts=(0.01,), lengths=(5000,), seeds=(
     across seeds; those are generated once (with the first seed) instead of
     re-running every model on the same data.
     """
+    return [make_dataset(sys_, noise=nz, dt=dt, n_samples=n, seed=sd, **kw)
+            for sys_, nz, dt, n, sd in grid_settings(systems, noises, dts, lengths, seeds)]
+
+
+def grid_settings(systems=None, noises=(0.0,), dts=(0.01,), lengths=(5000,), seeds=(0,)):
+    """The (system, noise, dt, n_samples, seed) tuples make_grid builds,
+    without generating any data (the app uses it to count runs)."""
     systems = systems or list(DEMO_SYSTEMS)
-    return [
-        make_dataset(sys_, noise=nz, dt=dt, n_samples=n, seed=sd, **kw)
-        for sys_, nz, dt, n, sd in itertools.product(systems, noises, dts, lengths, seeds)
-        if nz > 0 or sd == seeds[0]
-    ]
+    return [(sys_, nz, dt, n, sd)
+            for sys_, nz, dt, n, sd in itertools.product(systems, noises, dts, lengths, seeds)
+            if nz > 0 or sd == seeds[0]]

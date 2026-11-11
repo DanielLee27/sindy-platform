@@ -36,6 +36,7 @@ def parse_args(argv=None):
     p.add_argument("--no-store", action="store_true", help="don't log runs")
     p.add_argument("--csv", help="also export the whole store to this CSV")
     p.add_argument("--quiet", action="store_true", help="no per-run progress lines")
+    p.add_argument("--batch-id", help="batch id to log runs under (default: random)")
     return p.parse_args(argv)
 
 
@@ -49,7 +50,7 @@ def main(argv=None):
     print(f"{len(datasets)} datasets x {len(candidates)} models = "
           f"{len(datasets) * len(candidates)} runs\n")
 
-    store = None if args.no_store else RunStore(args.db)
+    store = None if args.no_store else RunStore(args.db, batch_id=args.batch_id)
     df = compare(candidates, datasets, store=store, verbose=not args.quiet)
 
     pd.set_option("display.width", 250)

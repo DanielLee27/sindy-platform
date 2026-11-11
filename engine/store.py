@@ -75,11 +75,13 @@ def _git_commit():
 
 
 class RunStore:
-    def __init__(self, path=DEFAULT_PATH):
+    def __init__(self, path=DEFAULT_PATH, batch_id=None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.git_commit = _git_commit()
-        self.batch_id = uuid.uuid4().hex[:12]  # groups the runs of one session
+        # Groups the runs of one session. A caller can choose it (the app
+        # does, so it can find the runs of a job it started in the background).
+        self.batch_id = batch_id or uuid.uuid4().hex[:12]
         self._init_schema()
 
     def _connect(self):
@@ -154,6 +156,14 @@ class RunStore:
         df = self.load_runs()
         df.to_csv(path, index=False)
         return path
+
+    def count(self, batch_id=None):
+        """Number of runs, optionally only those of one batch (cheap: no JSON parsing)."""
+        sql, params = "SELECT COUNT(*) FROM runs", ()
+        if batch_id is not None:
+            sql, params = sql + " WHERE batch_id = ?", (batch_id,)
+        with self._connect() as con:
+            return con.execute(sql, params).fetchone()[0]
 
     def __len__(self):
         with self._connect() as con:
