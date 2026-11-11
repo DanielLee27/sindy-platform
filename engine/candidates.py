@@ -160,11 +160,20 @@ class SindyCandidate(Candidate):
 #
 # SINDy-trig uses the same optimizer settings, so the library is the only
 # difference between the two: a controlled comparison.
+#
+# SINDy-poly+trig is the union library: it can express every demo system,
+# including the Pendulum's sin(theta) next to its linear terms (which a pure
+# Fourier library cannot). It uses ONE harmonic, the smallest Fourier set
+# containing the true term. This was chosen after seeing data: with two
+# harmonics, sin(2 theta)/cos(2 theta) overlap strongly with theta^3 and
+# recovery breaks at 5% noise. Disclose this when reporting its results.
 CANDIDATES = {
     "SINDy-poly": SindyCandidate("SINDy-poly", library="poly", degree=3,
                                  threshold=0.15, alpha=0.0),
     "SINDy-trig": SindyCandidate("SINDy-trig", library="trig", n_frequencies=2,
                                  threshold=0.15, alpha=0.0),
+    "SINDy-poly+trig": SindyCandidate("SINDy-poly+trig", library="poly+trig", degree=3,
+                                      n_frequencies=1, threshold=0.15, alpha=0.0),
 }
 
 

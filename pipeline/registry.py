@@ -12,6 +12,8 @@ Registries of models and plots available in the app.
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
+import pysindy as ps
+
 from pipeline.models import run_sindy, simulate_model
 from pipeline.visualize import (
     plot_phase_portrait,
@@ -42,6 +44,14 @@ class ModelSpec:
     description: str = ""
 
 
+def run_sindy_poly_trig(X, t, X_dot=None, feature_names=None, degree=1, n_frequencies=1,
+                        threshold=0.1, alpha=0.05):
+    """run_sindy with a polynomial + Fourier library (same return dict)."""
+    library = ps.PolynomialLibrary(degree=degree) + ps.FourierLibrary(n_frequencies=n_frequencies)
+    return run_sindy(X, t, X_dot=X_dot, feature_names=feature_names,
+                     threshold=threshold, alpha=alpha, library=library)
+
+
 MODELS = {
     "SINDy (STLSQ)": ModelSpec(
         fn=run_sindy,
@@ -55,6 +65,22 @@ MODELS = {
                            help="Ridge regularization strength."),
         },
         description="Polynomial library + sequentially thresholded least squares.",
+    ),
+    "SINDy (poly + trig)": ModelSpec(
+        fn=run_sindy_poly_trig,
+        simulate=simulate_model,
+        params={
+            "degree": Param("int", 1, 1, 5, step=1,
+                            help="Max polynomial degree of the polynomial part."),
+            "n_frequencies": Param("int", 1, 1, 4, step=1,
+                                   help="Harmonics k in sin(k x), cos(k x) for each variable."),
+            "threshold": Param("float", 0.1, 0.0, 2.0, step=0.01,
+                               help="STLSQ drops coefficients smaller than this."),
+            "alpha": Param("float", 0.05, 0.0, 1.0, step=0.01,
+                           help="Ridge regularization strength."),
+        },
+        description="Polynomial + Fourier (sin/cos) library. Needed for systems "
+                    "like the pendulum whose equations contain sin(theta).",
     ),
 }
 

@@ -32,6 +32,7 @@ class DemoSystem:
     dt: float = 0.01
     suggested: dict = field(default_factory=dict)  # suggested model settings
     description: str = ""
+    suggested_model: str = "SINDy (STLSQ)"         # key in registry.MODELS
 
     def true_equations(self, **params):
         """Right-hand sides as display strings, one per variable."""
@@ -120,6 +121,37 @@ def _rossler_true(a, b, c):
     }
 
 
+# --- Pendulum (nonlinear, trigonometric) --------------------------------------
+# The only demo system whose true equations are NOT polynomial: the restoring
+# force is sin(theta). It gives trig libraries a case they should win; a
+# polynomial library can only approximate sin(theta) by a Taylor series. The
+# default swing (2.5 rad, about 143 degrees) is far outside the small-angle
+# regime where sin(theta) ~ theta.
+#
+# Why damping is ON by default: an undamped pendulum conserves energy,
+# omega^2/2 - (g/L) cos(theta) = const, so the library columns 1, omega^2 and
+# cos(theta) are exactly linearly dependent along the trajectory. A poly+trig
+# library then has infinitely many equally good fits (unidentifiable).
+# Damping 0.2 breaks that and stays above the benchmark's STLSQ threshold
+# (0.15), so the damping term is recoverable. Side effect: by the forecast
+# window (last 20% of a 50 s run) the swing has decayed to ~0.04 rad, so
+# forecast scores separate models less on this system than reconstruction
+# and structure recovery do.
+
+def _pendulum_generate(t_end, dt, noise_level, seed, g_over_L, damping, x0=(2.5, 0.0)):
+    def rhs(t, s):
+        theta, omega = s
+        return [omega, -g_over_L * np.sin(theta) - damping * omega]
+    return simulate_system(rhs, list(x0), t_end, dt, noise_level, seed)
+
+
+def _pendulum_true(g_over_L, damping):
+    omega_terms = {"sin(1 theta)": -g_over_L}
+    if damping:
+        omega_terms["omega"] = -damping
+    return {"theta": {"omega": 1.0}, "omega": omega_terms}
+
+
 DEMO_SYSTEMS = {
     "Lorenz": DemoSystem(
         var_names=["x", "y", "z"],
@@ -160,6 +192,18 @@ DEMO_SYSTEMS = {
         t_end=50.0,
         suggested={"degree": 2, "threshold": 0.05},
         description="Chaotic attractor with one nonlinear term (xz); spiky z.",
+    ),
+    "Pendulum": DemoSystem(
+        var_names=["theta", "omega"],
+        generate=_pendulum_generate,
+        true_coefficients=_pendulum_true,
+        params={"g_over_L": 4.0, "damping": 0.2},
+        x0=(2.5, 0.0),
+        t_end=20.0,
+        suggested={"degree": 1, "n_frequencies": 1, "threshold": 0.1},
+        suggested_model="SINDy (poly + trig)",
+        description="Damped large-angle pendulum: d(omega)/dt = -(g/L) sin(theta) "
+                    "- c omega. Not polynomial, so it needs a trig library.",
     ),
 }
 

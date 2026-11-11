@@ -138,7 +138,8 @@ def test_poly_beats_trig_on_polynomial_systems_and_table_is_side_by_side():
     from engine.benchmarks import make_grid
     from engine.harness import comparison_table
 
-    df = compare(SINDY, make_grid(), verbose=False)
+    polynomial = ["Lorenz", "Lotka-Volterra", "Van der Pol", "Rossler"]
+    df = compare(SINDY, make_grid(systems=polynomial), verbose=False)
     assert set(df["model_name"]) == {"SINDy-poly", "SINDy-trig"}
     tab = comparison_table(df)
     recon = tab["reconstruction_error"]

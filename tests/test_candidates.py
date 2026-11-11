@@ -6,9 +6,11 @@ from engine.candidates import CANDIDATES, SindyCandidate
 from pipeline.systems import DEMO_SYSTEMS
 
 POLY = CANDIDATES["SINDy-poly"]
+POLY_TRIG = CANDIDATES["SINDy-poly+trig"]
+POLYNOMIAL_SYSTEMS = [s for s in DEMO_SYSTEMS if s != "Pendulum"]
 
 
-@pytest.mark.parametrize("system", list(DEMO_SYSTEMS))
+@pytest.mark.parametrize("system", POLYNOMIAL_SYSTEMS)
 @pytest.mark.parametrize("noise", [0.0, 0.01])
 def test_registered_poly_recovers_exact_structure(system, noise):
     d = make_dataset(system, noise=noise)
@@ -16,6 +18,21 @@ def test_registered_poly_recovers_exact_structure(system, noise):
     assert m.symbolic and m.n_terms > 0
     for v in d.var_names:
         assert set(m.coefficients[v]) == set(d.true_coefficients[v]), f"d{v}/dt"
+
+
+@pytest.mark.parametrize("noise", [0.0, 0.01, 0.05])
+def test_poly_trig_recovers_pendulum(noise):
+    d = make_dataset("Pendulum", noise=noise)
+    m = POLY_TRIG.fit(d.t_train, d.X_train, d.var_names)
+    for v in d.var_names:
+        assert set(m.coefficients[v]) == set(d.true_coefficients[v]), f"d{v}/dt"
+    assert m.coefficients["omega"]["sin(1 theta)"] == pytest.approx(-4.0, rel=0.01)
+
+
+def test_poly_alone_can_only_approximate_the_pendulum():
+    d = make_dataset("Pendulum")
+    m = POLY.fit(d.t_train, d.X_train, d.var_names)
+    assert "theta^3" in m.coefficients["omega"]  # Taylor series of sin(theta)
 
 
 def _rhs_matches_clean_derivative(model, d, tol):

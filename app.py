@@ -136,7 +136,12 @@ with st.sidebar:
     )
 
     st.header("3. Model")
-    model_name = st.selectbox("Model", list(MODELS))
+    # Default to the model the demo system suggests (e.g. poly + trig for the
+    # pendulum); keyed by dataset so switching systems resets it.
+    default_model = system.suggested_model if source == "Demo system" else None
+    model_name = st.selectbox(
+        "Model", list(MODELS), key=f"model:{data_key}",
+        index=list(MODELS).index(default_model) if default_model in MODELS else 0)
     spec = MODELS[model_name]
     st.caption(spec.description)
     # Keying widgets by dataset means switching systems resets them to that
